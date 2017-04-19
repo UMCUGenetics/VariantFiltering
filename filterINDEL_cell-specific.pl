@@ -4,7 +4,7 @@ use Getopt::Long qw(GetOptions);
 
 sub show_version{
     warn <<END;
-    Version 1.0.0 (copyright R. van Boxtel 2017)
+    Version 1.1.0 (copyright R. van Boxtel 2017)
 END
     exit;
 }
@@ -22,9 +22,10 @@ sub usage{
     -out | output directory
 
     Optional parameters:
-    -q | minimal GATK quality score for filtering (Default: 400)
+    -q | minimal GATK quality score for filtering (Default: 250)
     -RD | minimal read depth at a variant position in both TEST and CONTROL sample to pass the filter (Default: 20)
     -VAF | minimal variant allele frequency in the TEST sample for a variant to pass the filter (Default: 0.3)
+    -GQ | sample-specific genotype quality as determined by GATK (Default: 99)
 
 END
     exit;
@@ -36,9 +37,10 @@ my $vcf;
 my $sample;
 my $control;
 my $out_dir;
-my $qual = 400; #optional parameter
+my $qual = 250; #optional parameter
 my $min_rd = 20;
-my $min_vaf = 0.3; #optional parameter
+my $min_vaf = 0.1; #optional parameter
+my $GQ = 99; #optional parameter
 my $help;
 my $version;
 GetOptions(
@@ -49,6 +51,7 @@ GetOptions(
     'q=s' => \$qual,
     'RD=s' => \$min_rd,
     'VAF=s' => \$min_vaf,
+    'GQ=s' => \$GQ,
     'help' => \$help,
     'version' => \$version,
 );
@@ -100,6 +103,7 @@ while (my $line = <IN>){
 
 	my @info_control = split(":", $data[$control]); #get specs for control sample
 	next if ($info_control[0] ne "0/0"); #remove calls in ref sample
+#	next if ($info_control[3] < $GQ); #remove calls with low GQ-score in control sample
 	my @alleles_control = split(",", $info_control[1]);
 	my $RD_control = 0;
 	foreach my $allele (@alleles_control){
@@ -116,6 +120,7 @@ while (my $line = <IN>){
 
 	my @info_sample = split(":", $data[$sample]); #get specs for test sample
 	next if ($info_sample[0] eq "0/0" or $info_sample[0] eq "./."); #remove lines w/o call in test sample
+	next if ($info_sample[3] < $GQ); #remove calls with low GQ-score in test sample
 	my @alleles_sample = split(",", $info_sample[1]);
 	my $RD_sample = 0;
 	foreach my $allele (@alleles_sample){
