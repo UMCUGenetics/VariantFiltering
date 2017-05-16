@@ -115,7 +115,7 @@ while (my $line = <IN>){
 		$mapq = $mapqs[1];
 	    }
 	}
-	my $chr2 = $info[5];
+	my (undef, $chr2) = split('=\s*', $info[5]);
 	my $size = $pos2 - $data[1];
 	next if ($mapq < $min_mapq); #sufficient quality
 
